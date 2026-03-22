@@ -1,18 +1,49 @@
 <div class="flex flex-wrap items-center gap-6 text-sm">
     <div class="flex items-center space-x-2">
-        <span class="w-2 h-2 rounded-full {% if status.is_running %}bg-green-500{% else %}bg-red-500{% endif %}"></span>
+        <span class="w-2.5 h-2.5 rounded-full
+            {% if status.is_paused %}
+                bg-yellow-500
+            {% elif status.is_running %}
+                bg-green-500 animate-pulse
+            {% else %}
+                bg-gray-500
+            {% endif %}
+        "></span>
         <span class="text-gray-400">Status:</span>
-        <span class="text-white font-medium">{% if status.is_running %}Running{% else %}Stopped{% endif %}</span>
+        <span class="font-medium
+            {% if status.is_paused %}
+                text-yellow-400
+            {% elif status.is_running %}
+                text-green-400
+            {% else %}
+                text-gray-400
+            {% endif %}
+        ">
+            {% if status.is_paused %}
+                Paused
+            {% elif status.is_running %}
+                Active
+            {% else %}
+                Stopped
+            {% endif %}
+        </span>
     </div>
+
+    {% if status.is_paused and status.pause_reason %}
+    <div class="flex items-center space-x-2">
+        <span class="text-gray-400">Reason:</span>
+        <span class="text-yellow-400">{{ status.pause_reason }}</span>
+    </div>
+    {% endif %}
 
     <div class="flex items-center space-x-2">
         <span class="text-gray-400">Last Cycle:</span>
-        <span class="text-white">{{ status.last_cycle }}</span>
+        <span class="text-white">{{ status.last_cycle or 'Never' }}</span>
     </div>
 
     <div class="flex items-center space-x-2">
         <span class="text-gray-400">Next In:</span>
-        <span class="text-white">{{ status.next_cycle_in }}</span>
+        <span class="text-white {% if status.is_paused %}text-yellow-400{% endif %}">{{ status.next_cycle_in }}</span>
     </div>
 
     <div class="flex items-center space-x-2">

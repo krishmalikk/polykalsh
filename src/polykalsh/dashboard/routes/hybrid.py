@@ -4,12 +4,55 @@ Hybrid trading bot dashboard routes.
 Provides web interface for the Kalshi hybrid AI trader.
 """
 
+import json
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from flask import Blueprint, current_app, render_template, jsonify, request
 
 hybrid_bp = Blueprint("hybrid", __name__)
+
+
+def _get_state_file() -> Path:
+    """Get path to bot state file."""
+    settings = current_app.config["SETTINGS"]
+    return settings.data_dir / "hybrid_bot_state.json"
+
+
+def _read_bot_state() -> dict:
+    """Read bot state from file."""
+    state_file = _get_state_file()
+    try:
+        if state_file.exists():
+            with open(state_file) as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {
+        "is_paused": False,
+        "pause_reason": None,
+        "is_running": False,
+        "cycles_completed": 0,
+        "cycles_failed": 0,
+        "last_cycle_time": None,
+        "daily_pnl": 0.0,
+        "daily_trades": 0,
+        "daily_ai_cost": 0.0,
+    }
+
+
+def _write_bot_state(state: dict) -> bool:
+    """Write bot state to file."""
+    state_file = _get_state_file()
+    try:
+        state_file.parent.mkdir(parents=True, exist_ok=True)
+        state["last_updated"] = datetime.utcnow().isoformat()
+        with open(state_file, "w") as f:
+            json.dump(state, f, indent=2)
+        return True
+    except Exception:
+        return False
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -150,8 +193,25 @@ def partial_exit_conditions(market_ticker: str):
 @hybrid_bp.route("/api/status")
 def api_status():
     """API endpoint for bot status."""
-    status = _get_mock_status()
-    return jsonify(status)
+    state = _read_bot_state()
+    settings = current_app.config["SETTINGS"]
+
+    return jsonify({
+        "success": True,
+        "is_running": state.get("is_running", False),
+        "is_paused": state.get("is_paused", False),
+        "pause_reason": state.get("pause_reason"),
+        "paper_mode": settings.hybrid_trading.paper_mode,
+        "cycles_completed": state.get("cycles_completed", 0),
+        "cycles_failed": state.get("cycles_failed", 0),
+        "last_cycle_time": state.get("last_cycle_time"),
+        "last_updated": state.get("last_updated"),
+        "daily_stats": {
+            "pnl": state.get("daily_pnl", 0.0),
+            "trades": state.get("daily_trades", 0),
+            "ai_cost": state.get("daily_ai_cost", 0.0),
+        },
+    })
 
 
 @hybrid_bp.route("/api/portfolio")
@@ -178,16 +238,58 @@ def api_trades():
 
 @hybrid_bp.route("/api/toggle-trading", methods=["POST"])
 def api_toggle_trading():
-    """Toggle trading on/off."""
-    # TODO: Actually toggle trading
-    data = request.get_json() or {}
-    enabled = data.get("enabled", True)
+    """Toggle trading on/off (pause/resume)."""
+    state = _read_bot_state()
+    is_paused = state.get("is_paused", False)
 
-    return jsonify({
-        "success": True,
-        "trading_enabled": enabled,
-        "message": f"Trading {'enabled' if enabled else 'disabled'}",
-    })
+    # Toggle the state
+    state["is_paused"] = not is_paused
+    state["pause_reason"] = "Paused via dashboard" if not is_paused else None
+
+    if _write_bot_state(state):
+        return jsonify({
+            "success": True,
+            "is_paused": state["is_paused"],
+            "message": f"Trading {'paused' if state['is_paused'] else 'resumed'}",
+        })
+    else:
+        return jsonify({"success": False, "error": "Failed to update state"}), 500
+
+
+@hybrid_bp.route("/api/bot/pause", methods=["POST"])
+def api_bot_pause():
+    """Pause the trading bot."""
+    state = _read_bot_state()
+    data = request.get_json() or {}
+
+    state["is_paused"] = True
+    state["pause_reason"] = data.get("reason", "Paused via dashboard")
+
+    if _write_bot_state(state):
+        return jsonify({
+            "success": True,
+            "paused": True,
+            "reason": state["pause_reason"],
+        })
+    else:
+        return jsonify({"success": False, "error": "Failed to update state"}), 500
+
+
+@hybrid_bp.route("/api/bot/resume", methods=["POST"])
+def api_bot_resume():
+    """Resume the trading bot."""
+    state = _read_bot_state()
+
+    state["is_paused"] = False
+    state["pause_reason"] = None
+
+    if _write_bot_state(state):
+        return jsonify({
+            "success": True,
+            "paused": False,
+        })
+    else:
+        return jsonify({"success": False, "error": "Failed to update state"}), 500
 
 
 @hybrid_bp.route("/api/close-position", methods=["POST"])
@@ -212,14 +314,19 @@ def api_close_position():
 
 
 def _get_mock_status() -> dict[str, Any]:
-    """Get mock bot status."""
+    """Get bot status (real state + mock data for missing fields)."""
+    state = _read_bot_state()
+    settings = current_app.config["SETTINGS"]
+
     return {
-        "is_running": True,
-        "paper_mode": True,
-        "last_cycle": datetime.utcnow().strftime("%H:%M:%S"),
-        "cycles_today": 48,
-        "next_cycle_in": "5:32",
-        "errors_today": 0,
+        "is_running": state.get("is_running", False),
+        "is_paused": state.get("is_paused", False),
+        "pause_reason": state.get("pause_reason"),
+        "paper_mode": settings.hybrid_trading.paper_mode,
+        "last_cycle": state.get("last_cycle_time", datetime.utcnow().strftime("%H:%M:%S")),
+        "cycles_today": state.get("cycles_completed", 0),
+        "next_cycle_in": "5:00" if not state.get("is_paused") else "Paused",
+        "errors_today": state.get("cycles_failed", 0),
     }
 
 

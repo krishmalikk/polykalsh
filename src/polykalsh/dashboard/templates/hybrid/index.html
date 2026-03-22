@@ -3,7 +3,7 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-6" x-data="hybridBotApp()">
     <!-- Header -->
     <div class="flex justify-between items-center">
         <div>
@@ -16,13 +16,40 @@
                 PAPER MODE
             </span>
             {% endif %}
+
+            <!-- Bot Status Indicator -->
+            <div class="flex items-center space-x-2 px-3 py-1.5 bg-gray-800 rounded-lg border border-gray-700">
+                <div
+                    class="w-2.5 h-2.5 rounded-full"
+                    :class="botPaused ? 'bg-yellow-500' : (botRunning ? 'bg-green-500 animate-pulse' : 'bg-gray-500')"
+                ></div>
+                <span class="text-sm font-medium" :class="{
+                    'text-green-400': !botPaused && botRunning,
+                    'text-yellow-400': botPaused,
+                    'text-gray-400': !botPaused && !botRunning
+                }" x-text="botPaused ? 'Paused' : (botRunning ? 'Active' : 'Stopped')"></span>
+            </div>
+
+            <!-- Pause/Resume Button -->
             <button
-                x-data="{ enabled: true }"
-                @click="enabled = !enabled; $dispatch('toggle-trading', { enabled })"
-                :class="enabled ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'"
-                class="px-4 py-2 rounded-md text-white font-medium transition-colors"
+                @click="toggleBot()"
+                :disabled="isToggling"
+                class="px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 disabled:opacity-50"
+                :class="botPaused ?
+                    'bg-green-600 hover:bg-green-700 text-white' :
+                    'bg-yellow-600 hover:bg-yellow-700 text-white'"
             >
-                <span x-text="enabled ? 'Trading Active' : 'Trading Paused'"></span>
+                <template x-if="!botPaused">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                    </svg>
+                </template>
+                <template x-if="botPaused">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </template>
+                <span x-text="botPaused ? 'Resume Trading' : 'Pause Trading'"></span>
             </button>
         </div>
     </div>
@@ -124,4 +151,53 @@
         </div>
     </div>
 </div>
+
+<script>
+function hybridBotApp() {
+    return {
+        botRunning: false,
+        botPaused: false,
+        isToggling: false,
+
+        init() {
+            this.fetchStatus();
+            // Poll status every 10 seconds
+            setInterval(() => this.fetchStatus(), 10000);
+        },
+
+        async fetchStatus() {
+            try {
+                const response = await fetch('/hybrid/api/status');
+                const data = await response.json();
+                if (data.success) {
+                    this.botRunning = data.is_running;
+                    this.botPaused = data.is_paused;
+                }
+            } catch (error) {
+                console.error('Failed to fetch bot status:', error);
+            }
+        },
+
+        async toggleBot() {
+            if (this.isToggling) return;
+            this.isToggling = true;
+
+            try {
+                const response = await fetch('/hybrid/api/toggle-trading', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.botPaused = data.is_paused;
+                }
+            } catch (error) {
+                console.error('Failed to toggle bot:', error);
+            }
+
+            this.isToggling = false;
+        }
+    };
+}
+</script>
 {% endblock %}

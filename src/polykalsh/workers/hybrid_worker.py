@@ -55,6 +55,11 @@ class HybridWorker:
         self._notifier: DiscordNotifier | None = None
         self._db_session: Session | None = None
         self._is_running = False
+        self._is_paused = False
+        self._pause_reason: str | None = None
+
+        # State file for inter-process communication
+        self._state_file = self.settings.data_dir / "hybrid_bot_state.json"
 
         # Stats
         self.cycles_completed = 0
@@ -63,6 +68,72 @@ class HybridWorker:
         self.daily_pnl = 0.0
         self.daily_trades = 0
         self.daily_ai_cost = 0.0
+
+        # Load initial state
+        self._load_state()
+
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # STATE MANAGEMENT (for inter-process communication)
+    # ═══════════════════════════════════════════════════════════════════════════════
+
+    def _load_state(self) -> None:
+        """Load state from file."""
+        import json
+        try:
+            if self._state_file.exists():
+                with open(self._state_file) as f:
+                    state = json.load(f)
+                    self._is_paused = state.get("is_paused", False)
+                    self._pause_reason = state.get("pause_reason")
+        except Exception as e:
+            logger.warning("state_load_error", error=str(e))
+
+    def _save_state(self) -> None:
+        """Save state to file."""
+        import json
+        try:
+            self._state_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(self._state_file, "w") as f:
+                json.dump({
+                    "is_paused": self._is_paused,
+                    "pause_reason": self._pause_reason,
+                    "is_running": self._is_running,
+                    "last_updated": datetime.utcnow().isoformat(),
+                    "cycles_completed": self.cycles_completed,
+                    "cycles_failed": self.cycles_failed,
+                    "last_cycle_time": self.last_cycle_time.isoformat() if self.last_cycle_time else None,
+                    "daily_pnl": self.daily_pnl,
+                    "daily_trades": self.daily_trades,
+                    "daily_ai_cost": self.daily_ai_cost,
+                }, f, indent=2)
+        except Exception as e:
+            logger.warning("state_save_error", error=str(e))
+
+    def _check_pause_state(self) -> bool:
+        """Check if paused (reload from file to catch dashboard changes)."""
+        self._load_state()
+        return self._is_paused
+
+    def pause(self, reason: str | None = None) -> dict:
+        """Pause the trading bot."""
+        self._is_paused = True
+        self._pause_reason = reason
+        self._save_state()
+        logger.info("hybrid_bot_paused", reason=reason)
+        return {"success": True, "paused": True, "reason": reason}
+
+    def resume(self) -> dict:
+        """Resume the trading bot."""
+        self._is_paused = False
+        self._pause_reason = None
+        self._save_state()
+        logger.info("hybrid_bot_resumed")
+        return {"success": True, "paused": False}
+
+    @property
+    def is_paused(self) -> bool:
+        """Check if paused."""
+        return self._is_paused
 
     async def start(self) -> None:
         """Start the worker and all scheduled jobs."""
@@ -240,6 +311,11 @@ class HybridWorker:
 
     async def _run_trading_cycle(self) -> None:
         """Run a single trading cycle."""
+        # Check if paused (reload from state file)
+        if self._check_pause_state():
+            logger.info("trading_cycle_skipped_paused")
+            return
+
         logger.info("trading_cycle_start")
 
         try:
@@ -260,6 +336,9 @@ class HybridWorker:
                 cycle_pnl=result.cycle_pnl,
                 duration=result.duration_seconds,
             )
+
+            # Save state for dashboard
+            self._save_state()
 
             # Send notifications for trades
             await self._notify_trades(result)
@@ -417,6 +496,8 @@ class HybridWorker:
         """Get worker status."""
         return {
             "is_running": self._is_running,
+            "is_paused": self._is_paused,
+            "pause_reason": self._pause_reason,
             "paper_mode": self.settings.hybrid_trading.paper_mode,
             "cycles_completed": self.cycles_completed,
             "cycles_failed": self.cycles_failed,
