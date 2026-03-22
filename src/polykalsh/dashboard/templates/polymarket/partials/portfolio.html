@@ -1,0 +1,35 @@
+<div class="flex items-center justify-between mb-6">
+    <h2 class="text-lg font-semibold text-white">Portfolio</h2>
+    <div class="text-right">
+        <p class="text-2xl font-bold text-white">${{ "%.2f"|format(portfolio.total_value) }}</p>
+        {% if portfolio.total_pnl != 0 %}
+        <p class="text-sm {% if portfolio.total_pnl >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+            {% if portfolio.total_pnl >= 0 %}+{% endif %}${{ "%.2f"|format(portfolio.total_pnl) }}
+            ({% if portfolio.total_pnl_pct >= 0 %}+{% endif %}{{ "%.2f"|format(portfolio.total_pnl_pct) }}%)
+        </p>
+        {% else %}
+        <p class="text-sm text-gray-500">No activity yet</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="bg-gray-900/50 rounded-xl p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Cash</p>
+        <p class="text-xl font-bold text-white">${{ "%.2f"|format(portfolio.cash_balance) }}</p>
+    </div>
+    <div class="bg-gray-900/50 rounded-xl p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Positions</p>
+        <p class="text-xl font-bold text-white">${{ "%.2f"|format(portfolio.positions_value) }}</p>
+    </div>
+    <div class="bg-gray-900/50 rounded-xl p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Today's P&L</p>
+        <p class="text-xl font-bold {% if portfolio.daily_pnl >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+            {% if portfolio.daily_pnl >= 0 %}+{% endif %}${{ "%.2f"|format(portfolio.daily_pnl) }}
+        </p>
+    </div>
+    <div class="bg-gray-900/50 rounded-xl p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Open</p>
+        <p class="text-xl font-bold text-white">{{ portfolio.open_positions }}</p>
+    </div>
+</div>

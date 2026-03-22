@@ -1,0 +1,36 @@
+<div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-semibold text-white">Bot Status</h2>
+    <div class="flex items-center space-x-2">
+        {% if status.is_running %}
+        <div class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></div>
+        <span class="text-sm text-green-400 font-medium">Running</span>
+        {% elif status.setup_required %}
+        <div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
+        <span class="text-sm text-yellow-400 font-medium">Setup Required</span>
+        {% else %}
+        <div class="w-2.5 h-2.5 rounded-full bg-gray-500"></div>
+        <span class="text-sm text-gray-400 font-medium">Stopped</span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+    <div class="bg-gray-900/50 rounded-xl p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Last Poll</p>
+        <p class="text-white font-semibold">{{ status.last_poll or '--' }}</p>
+    </div>
+    <div class="bg-gray-900/50 rounded-xl p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Polls Today</p>
+        <p class="text-white font-semibold">{{ status.polls_today }}</p>
+    </div>
+    <div class="bg-gray-900/50 rounded-xl p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Leaders</p>
+        <p class="text-white font-semibold">{{ status.leaders_tracked }}</p>
+    </div>
+    <div class="bg-gray-900/50 rounded-xl p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Errors</p>
+        <p class="{% if status.errors_today > 0 %}text-red-400{% else %}text-green-400{% endif %} font-semibold">
+            {{ status.errors_today }}
+        </p>
+    </div>
+</div>

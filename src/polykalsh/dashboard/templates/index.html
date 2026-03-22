@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Hero Header -->
+    <div class="text-center py-8">
+        <h1 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent mb-4">
+            Trading Dashboard
+        </h1>
+        <p class="text-gray-400 text-lg max-w-2xl mx-auto">
+            Monitor and manage your autonomous trading bots across prediction markets
+        </p>
+    </div>
+
+    <!-- Bot Cards -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {% if kalshi_enabled %}
+        <!-- Kalshi Bot Card -->
+        <a href="/kalshi" class="group relative overflow-hidden rounded-2xl bg-gray-800/50 border border-gray-700/50 card-hover">
+            <div class="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="relative p-8">
+                <div class="flex items-start justify-between mb-6">
+                    <div class="w-14 h-14 rounded-xl gradient-kalshi flex items-center justify-center shadow-lg">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        <span class="text-sm text-green-400 font-medium">Active</span>
+                    </div>
+                </div>
+
+                <h2 class="text-2xl font-bold text-white mb-2">Kalshi AI Bot</h2>
+                <p class="text-gray-400 mb-6">
+                    Multi-model AI ensemble with 5 specialized agents for autonomous trading on Kalshi prediction markets.
+                </p>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-900/50 rounded-lg p-4">
+                        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Strategy</p>
+                        <p class="text-white font-semibold">AI Ensemble</p>
+                    </div>
+                    <div class="bg-gray-900/50 rounded-lg p-4">
+                        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Models</p>
+                        <p class="text-white font-semibold">5 Agents</p>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex items-center text-purple-400 group-hover:text-purple-300 transition-colors">
+                    <span class="font-medium">View Dashboard</span>
+                    <svg class="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                </div>
+            </div>
+        </a>
+        {% endif %}
+
+        {% if copytrader_enabled %}
+        <!-- Polymarket Bot Card -->
+        <a href="/polymarket" class="group relative overflow-hidden rounded-2xl bg-gray-800/50 border border-gray-700/50 card-hover">
+            <div class="absolute inset-0 bg-gradient-to-br from-pink-600/20 to-rose-600/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="relative p-8">
+                <div class="flex items-start justify-between mb-6">
+                    <div class="w-14 h-14 rounded-xl gradient-polymarket flex items-center justify-center shadow-lg">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
+                        <span class="text-sm text-yellow-400 font-medium">Setup Required</span>
+                    </div>
+                </div>
+
+                <h2 class="text-2xl font-bold text-white mb-2">Polymarket Copy Bot</h2>
+                <p class="text-gray-400 mb-6">
+                    Automatically mirror trades from top-performing wallets on Polymarket prediction markets.
+                </p>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-900/50 rounded-lg p-4">
+                        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Strategy</p>
+                        <p class="text-white font-semibold">Copy Trading</p>
+                    </div>
+                    <div class="bg-gray-900/50 rounded-lg p-4">
+                        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Leaders</p>
+                        <p class="text-white font-semibold">Auto-Discover</p>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex items-center text-pink-400 group-hover:text-pink-300 transition-colors">
+                    <span class="font-medium">View Dashboard</span>
+                    <svg class="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                </div>
+            </div>
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="bg-gray-800/30 rounded-2xl border border-gray-700/50 p-8">
+        <h2 class="text-xl font-bold text-white mb-6">System Overview</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div class="text-center">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                    </svg>
+                </div>
+                <p class="text-3xl font-bold text-white">{{ active_bots }}</p>
+                <p class="text-sm text-gray-500">Active Bots</p>
+            </div>
+            <div class="text-center">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-green-500/20 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <p class="text-3xl font-bold text-green-400">Online</p>
+                <p class="text-sm text-gray-500">System Status</p>
+            </div>
+            <div class="text-center">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+                <p class="text-3xl font-bold text-white">--</p>
+                <p class="text-sm text-gray-500">Open Positions</p>
+            </div>
+            <div class="text-center">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <p class="text-3xl font-bold text-white">--</p>
+                <p class="text-sm text-gray-500">Uptime</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% if positions %}
+<div class="overflow-x-auto">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="text-left text-gray-400 border-b border-gray-700">
+                <th class="pb-3 font-medium">Market</th>
+                <th class="pb-3 font-medium">Side</th>
+                <th class="pb-3 font-medium text-right">Contracts</th>
+                <th class="pb-3 font-medium text-right">Entry</th>
+                <th class="pb-3 font-medium text-right">Current</th>
+                <th class="pb-3 font-medium text-right">P&L</th>
+                <th class="pb-3 font-medium">Strategy</th>
+                <th class="pb-3 font-medium text-right">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-700">
+            {% for pos in positions %}
+            <tr class="hover:bg-gray-700/50">
+                <td class="py-3">
+                    <div class="font-medium text-white">{{ pos.market_ticker }}</div>
+                    <div class="text-xs text-gray-400 truncate max-w-xs">{{ pos.market_title }}</div>
+                </td>
+                <td class="py-3">
+                    <span class="px-2 py-1 text-xs rounded {% if pos.side == 'YES' %}bg-green-600/20 text-green-400{% else %}bg-red-600/20 text-red-400{% endif %}">
+                        {{ pos.side }}
+                    </span>
+                </td>
+                <td class="py-3 text-right text-white">{{ pos.contracts }}</td>
+                <td class="py-3 text-right text-white">${{ "%.2f"|format(pos.entry_price) }}</td>
+                <td class="py-3 text-right text-white">${{ "%.2f"|format(pos.current_price) }}</td>
+                <td class="py-3 text-right {% if pos.pnl >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                    ${{ "%+.2f"|format(pos.pnl) }}
+                    <span class="text-xs">({{ "%+.1f"|format(pos.pnl_pct) }}%)</span>
+                </td>
+                <td class="py-3">
+                    <span class="text-xs text-gray-400 capitalize">{{ pos.strategy }}</span>
+                </td>
+                <td class="py-3 text-right">
+                    <button
+                        hx-post="/hybrid/api/close-position"
+                        hx-vals='{"market_ticker": "{{ pos.market_ticker }}"}'
+                        hx-confirm="Close position in {{ pos.market_ticker }}?"
+                        class="text-xs text-red-400 hover:text-red-300"
+                    >
+                        Close
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="text-center py-8">
+    <p class="text-gray-400">No open positions</p>
+</div>
+{% endif %}

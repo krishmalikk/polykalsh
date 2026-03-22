@@ -1,0 +1,78 @@
+{% if error %}
+<div class="text-center py-4">
+    <p class="text-red-400 text-sm">{{ error }}</p>
+</div>
+{% elif recommendations and recommendations|length > 0 %}
+<div class="space-y-3">
+    {% for rec in recommendations %}
+    <div class="bg-gray-900/30 rounded-xl p-3 border border-gray-700/30">
+        <!-- Header -->
+        <div class="flex items-start justify-between mb-2">
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-white truncate">{{ rec.market_title }}</p>
+                <p class="text-xs text-gray-500">{{ rec.market_ticker }}</p>
+            </div>
+            <span class="ml-2 px-2 py-0.5 text-xs font-medium rounded
+                {% if rec.side == 'YES' %}bg-green-500/20 text-green-400{% else %}bg-red-500/20 text-red-400{% endif %}">
+                {{ rec.side }}
+            </span>
+        </div>
+
+        <!-- Details -->
+        <div class="grid grid-cols-2 gap-2 text-xs mb-3">
+            <div>
+                <span class="text-gray-500">Contracts</span>
+                <span class="text-white ml-1">{{ rec.suggested_contracts }}</span>
+            </div>
+            <div>
+                <span class="text-gray-500">Price</span>
+                <span class="text-white ml-1">${{ "%.2f"|format(rec.current_price) }}</span>
+            </div>
+            <div>
+                <span class="text-gray-500">Cost</span>
+                <span class="text-white ml-1">${{ "%.2f"|format(rec.suggested_amount) }}</span>
+            </div>
+            <div>
+                <span class="text-gray-500">Edge</span>
+                <span class="{% if rec.edge > 0 %}text-green-400{% else %}text-red-400{% endif %} ml-1">
+                    {{ "%+.1f"|format(rec.edge * 100) }}%
+                </span>
+            </div>
+        </div>
+
+        <!-- Reasoning -->
+        <p class="text-xs text-gray-400 mb-3 line-clamp-2">{{ rec.reasoning }}</p>
+
+        <!-- Actions -->
+        <div class="flex space-x-2">
+            <button
+                hx-post="/advisor/api/confirm/{{ rec.id }}"
+                hx-swap="none"
+                hx-on::after-request="htmx.trigger(document.body, 'recommendations-updated')"
+                class="flex-1 px-3 py-1.5 text-xs font-medium bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg transition-colors"
+            >
+                Confirm
+            </button>
+            <button
+                hx-post="/advisor/api/reject/{{ rec.id }}"
+                hx-swap="none"
+                hx-on::after-request="htmx.trigger(document.body, 'recommendations-updated')"
+                class="flex-1 px-3 py-1.5 text-xs font-medium bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+            >
+                Reject
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-8">
+    <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-gray-700/30 flex items-center justify-center">
+        <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+    </div>
+    <p class="text-gray-500 text-sm">No pending recommendations</p>
+    <p class="text-gray-600 text-xs mt-1">Ask the advisor for market analysis</p>
+</div>
+{% endif %}

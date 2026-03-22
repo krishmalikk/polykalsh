@@ -26,6 +26,11 @@ dependencies = [
 
     # Kalshi
     "kalshi-python>=2.1",
+    "cryptography>=42.0",  # RSA signing for Kalshi auth
+
+    # AI Providers
+    "anthropic>=0.39",     # Claude API
+    "openai>=1.50",        # OpenRouter (OpenAI-compatible)
 
     # HTTP clients
     "httpx>=0.27",
@@ -36,6 +41,7 @@ dependencies = [
 
     # Utilities
     "structlog>=24.0",
+    "numpy>=1.26",         # Kelly Criterion math
 ]
 
 [project.optional-dependencies]

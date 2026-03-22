@@ -1,0 +1,271 @@
+{% if error %}
+<div class="flex items-center justify-center h-full">
+    <div class="text-center">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
+            <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+        </div>
+        <p class="text-red-400 mb-2">{{ error }}</p>
+        <p class="text-gray-500 text-sm">Click "Refresh Now" to try again</p>
+    </div>
+</div>
+
+{% elif recommendations and recommendations|length > 0 %}
+<!-- Portfolio Summary Bar -->
+{% if portfolio %}
+<div class="mb-4 p-3 bg-gray-900/50 rounded-xl flex items-center justify-between">
+    <div class="flex items-center space-x-6">
+        <div>
+            <span class="text-xs text-gray-500">Available</span>
+            <span class="ml-2 text-sm font-semibold text-green-400">${{ "%.2f"|format(portfolio.available_cash) }}</span>
+        </div>
+        <div>
+            <span class="text-xs text-gray-500">In Positions</span>
+            <span class="ml-2 text-sm font-semibold text-blue-400">${{ "%.2f"|format(portfolio.positions_value) }}</span>
+        </div>
+        <div>
+            <span class="text-xs text-gray-500">Pending</span>
+            <span class="ml-2 text-sm font-semibold text-purple-400">{{ recommendations|selectattr('status', 'equalto', 'pending')|list|length }}</span>
+        </div>
+    </div>
+    <div class="text-xs text-gray-500">
+        {% if cache and cache.generated_at %}
+        Updated: {{ cache.generated_at.strftime('%H:%M') }}
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Recommendations Grid -->
+<div class="grid gap-4">
+    {% for rec in recommendations %}
+    {% if rec.status == 'pending' %}
+    <div class="bg-gray-900/30 rounded-xl p-4 border border-gray-700/30 hover:border-gray-600/50 transition-colors">
+        <!-- Header Row -->
+        <div class="flex items-start justify-between mb-3">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center space-x-2 mb-1">
+                    <span class="px-1.5 py-0.5 text-[10px] font-bold bg-blue-500/20 text-blue-400 rounded uppercase tracking-wider">Kalshi</span>
+                    <span class="text-[10px] text-gray-500 font-mono">{{ rec.market_ticker }}</span>
+                </div>
+                <h3 class="text-base font-medium text-white truncate">{{ rec.market_title }}</h3>
+                <p class="text-xs text-gray-500 truncate">{{ rec.event_title }}</p>
+            </div>
+            <div class="flex items-center space-x-2 ml-3">
+                <!-- Side Badge -->
+                <span class="px-2 py-0.5 text-xs font-semibold rounded
+                    {% if rec.side == 'YES' %}bg-green-500/20 text-green-400{% else %}bg-red-500/20 text-red-400{% endif %}">
+                    {{ rec.side }}
+                </span>
+                <!-- Confidence Badge -->
+                <span class="px-2 py-0.5 text-xs rounded
+                    {% if rec.confidence == 'very_high' %}bg-purple-500/20 text-purple-400
+                    {% elif rec.confidence == 'high' %}bg-blue-500/20 text-blue-400
+                    {% elif rec.confidence == 'medium' %}bg-yellow-500/20 text-yellow-400
+                    {% else %}bg-gray-500/20 text-gray-400{% endif %}">
+                    {{ rec.confidence|title }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="grid grid-cols-4 gap-3 mb-3">
+            <div class="bg-gray-800/50 rounded-lg p-2">
+                <p class="text-xs text-gray-500 mb-0.5">Price</p>
+                <p class="text-sm font-semibold text-white">${{ "%.2f"|format(rec.yes_price if rec.side == 'YES' else rec.no_price) }}</p>
+            </div>
+            <div class="bg-gray-800/50 rounded-lg p-2">
+                <p class="text-xs text-gray-500 mb-0.5">Edge</p>
+                <p class="text-sm font-semibold {% if rec.edge > 0.10 %}text-green-400{% elif rec.edge > 0.05 %}text-yellow-400{% else %}text-gray-400{% endif %}">
+                    {{ "%+.1f"|format(rec.edge * 100) }}%
+                </p>
+            </div>
+            <div class="bg-gray-800/50 rounded-lg p-2">
+                <p class="text-xs text-gray-500 mb-0.5">Profit If Correct</p>
+                <p class="text-sm font-semibold text-green-400">+${{ "%.2f"|format(rec.profit_potential) }}</p>
+            </div>
+            <div class="bg-gray-800/50 rounded-lg p-2">
+                <p class="text-xs text-gray-500 mb-0.5">Max Loss</p>
+                <p class="text-sm font-semibold text-red-400">-${{ "%.2f"|format(rec.max_loss) }}</p>
+            </div>
+        </div>
+
+        <!-- Reasoning -->
+        <div class="mb-3">
+            <p class="text-sm text-gray-300">{{ rec.reasoning }}</p>
+        </div>
+
+        <!-- Expandable Details -->
+        <details class="mb-3 group">
+            <summary class="text-xs text-purple-400 cursor-pointer hover:text-purple-300 list-none flex items-center">
+                <svg class="w-3 h-3 mr-1 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+                View Analysis Details
+            </summary>
+            <div class="mt-2 space-y-2 pl-4 border-l-2 border-gray-700">
+                <div>
+                    <p class="text-xs text-green-400 font-medium">Bull Case</p>
+                    <p class="text-sm text-gray-300">{{ rec.bull_case }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-red-400 font-medium">Bear Case</p>
+                    <p class="text-sm text-gray-300">{{ rec.bear_case }}</p>
+                </div>
+            </div>
+        </details>
+
+        <!-- Risk Assessment -->
+        <div class="mb-4 p-2 rounded-lg
+            {% if rec.risk_level == 'high' %}bg-red-500/10 border border-red-500/20
+            {% elif rec.risk_level == 'medium' %}bg-yellow-500/10 border border-yellow-500/20
+            {% else %}bg-green-500/10 border border-green-500/20{% endif %}">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-medium
+                    {% if rec.risk_level == 'high' %}text-red-400
+                    {% elif rec.risk_level == 'medium' %}text-yellow-400
+                    {% else %}text-green-400{% endif %}">
+                    {{ rec.risk_level|upper }} RISK
+                </span>
+                {% if rec.hours_until_close %}
+                <span class="text-xs text-gray-500">Closes in {{ "%.1f"|format(rec.hours_until_close) }}h</span>
+                {% endif %}
+            </div>
+            <p class="text-xs text-gray-400">{{ rec.risk_details }}</p>
+        </div>
+
+        <!-- Position Sizing -->
+        <div class="flex items-center justify-between mb-4 p-2 bg-gray-800/30 rounded-lg">
+            <div class="flex items-center space-x-4">
+                <div>
+                    <span class="text-xs text-gray-500">Contracts</span>
+                    <span class="ml-1 text-sm font-semibold text-white">{{ rec.suggested_contracts }}</span>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-500">Total Cost</span>
+                    <span class="ml-1 text-sm font-semibold text-white">${{ "%.2f"|format(rec.suggested_amount) }}</span>
+                </div>
+            </div>
+            <div>
+                <span class="text-xs text-gray-500">Risk/Reward</span>
+                <span class="ml-1 text-sm font-semibold text-blue-400">
+                    1:{{ "%.1f"|format(rec.profit_potential / rec.max_loss if rec.max_loss > 0 else 0) }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex space-x-3">
+            <button
+                hx-post="/advisor/api/auto-recommendations/confirm/{{ rec.id }}"
+                hx-swap="none"
+                hx-confirm="Execute this trade on Kalshi? This will place a REAL order for {{ rec.suggested_contracts }} {{ rec.side }} contracts (~${{ '%.2f'|format(rec.suggested_amount) }})."
+                hx-on::after-request="htmx.trigger(document.body, 'recommendations-refreshed')"
+                class="flex-1 px-4 py-2 text-sm font-medium bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg transition-colors flex items-center justify-center space-x-2"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Execute on Kalshi</span>
+            </button>
+            <button
+                hx-post="/advisor/api/auto-recommendations/reject/{{ rec.id }}"
+                hx-swap="none"
+                hx-on::after-request="htmx.trigger(document.body, 'recommendations-refreshed')"
+                class="flex-1 px-4 py-2 text-sm font-medium bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors flex items-center justify-center space-x-2"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span>Skip</span>
+            </button>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+
+<!-- Disclaimer -->
+<div class="mt-4 p-3 bg-gray-900/30 rounded-lg border border-yellow-700/30">
+    <p class="text-xs text-yellow-500/80 text-center font-medium mb-1">
+        Clicking "Execute on Kalshi" will place REAL trades with REAL money.
+    </p>
+    <p class="text-xs text-gray-500 text-center">
+        This is research, not financial advice. You can lose money trading. Only trade what you can afford to lose.
+    </p>
+</div>
+
+{% else %}
+<!-- Empty State -->
+<div class="flex flex-col items-center justify-center h-full text-center">
+    <div class="w-20 h-20 mb-4 rounded-full bg-gray-700/30 flex items-center justify-center">
+        {% if active_filter == 'today' %}
+        <svg class="w-10 h-10 text-green-500/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        {% elif active_filter == 'this_week' %}
+        <svg class="w-10 h-10 text-blue-500/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        {% elif active_filter == 'sports' %}
+        <svg class="w-10 h-10 text-orange-500/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        {% else %}
+        <svg class="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+        {% endif %}
+    </div>
+    <h3 class="text-lg font-medium text-white mb-2">
+        {% if active_filter == 'today' %}
+            No Markets Closing Today
+        {% elif active_filter == 'this_week' %}
+            No Markets Closing This Week
+        {% elif active_filter == 'sports' %}
+            No Sports Markets Available
+        {% else %}
+            No Recommendations Yet
+        {% endif %}
+    </h3>
+    <p class="text-gray-400 mb-4 max-w-sm">
+        {% if active_filter == 'today' %}
+            No markets with recommendations are closing in the next 24 hours. Check "This Week" or "All" for more options.
+        {% elif active_filter == 'this_week' %}
+            No markets with recommendations are closing in the next 7 days. Try "All" to see long-term opportunities.
+        {% elif active_filter == 'sports' %}
+            No sports markets have recommendations right now. Sports markets are most active during live games (NFL Sundays, NBA games, etc.).
+        {% elif cache and cache.analysis_status == 'analyzing' %}
+            AI is analyzing markets... This may take 30-60 seconds.
+        {% elif cache and cache.error_message %}
+            {{ cache.error_message }}
+        {% else %}
+            Click "Refresh Now" to scan markets and generate AI-powered trading recommendations.
+        {% endif %}
+    </p>
+    {% if cache and cache.analysis_status == 'analyzing' %}
+    <div class="flex items-center space-x-2 text-purple-400">
+        <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        <span class="text-sm">Analyzing...</span>
+    </div>
+    {% endif %}
+    {% if all_count > 0 and filtered_count == 0 %}
+    <p class="text-xs text-purple-400 mt-2">
+        {{ all_count }} recommendations available in other categories
+    </p>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Update filter count in parent -->
+<script>
+    (function() {
+        const appEl = document.querySelector('[x-data="advisorApp()"]');
+        if (appEl && appEl.__x) {
+            appEl.__x.$data.filterCount = {{ filtered_count|default(0) }};
+        }
+    })();
+</script>

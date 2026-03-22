@@ -1,0 +1,40 @@
+{% if leaders %}
+<div class="space-y-3">
+    {% for leader in leaders %}
+    <div class="bg-gray-900/50 rounded-xl p-4 hover:bg-gray-900/70 transition-colors">
+        <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-white text-xs font-bold">
+                    {{ loop.index }}
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-white font-mono">{{ leader.address[:8] }}...{{ leader.address[-6:] }}</p>
+                    <p class="text-xs text-gray-500">{{ leader.period }}</p>
+                </div>
+            </div>
+            <span class="px-2 py-0.5 text-xs font-semibold rounded {% if leader.is_active %}bg-green-500/20 text-green-400{% else %}bg-gray-500/20 text-gray-400{% endif %}">
+                {{ 'Active' if leader.is_active else 'Inactive' }}
+            </span>
+        </div>
+        <div class="flex items-center justify-between text-sm">
+            <div class="text-gray-400">
+                PnL: <span class="{% if leader.pnl >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                    {% if leader.pnl >= 0 %}+{% endif %}${{ "%.0f"|format(leader.pnl) }}
+                </span>
+            </div>
+            <div class="text-gray-400">
+                Vol: ${{ "%.0f"|format(leader.volume) }}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-8">
+    <svg class="w-12 h-12 mx-auto text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+    <p class="text-gray-500 mb-2">No leaders tracked</p>
+    <p class="text-gray-600 text-sm">Leaders will be auto-discovered when the bot starts</p>
+</div>
+{% endif %}

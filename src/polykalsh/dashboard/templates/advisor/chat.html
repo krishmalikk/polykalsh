@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Kalshi Advisor{% endblock %}
+
+{% block content %}
+<div class="flex h-[calc(100vh-8rem)] gap-4" x-data="advisorApp()">
+
+    <!-- LEFT: Auto-Recommendations Dashboard (2/3 width) -->
+    <div class="w-2/3 flex flex-col bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
+        <!-- Dashboard Header with Refresh Controls -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-700/50">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-teal-500 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-semibold text-white">Kalshi Recommendations</h1>
+                    <p class="text-sm text-gray-400" x-text="refreshStatus"></p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <!-- Bot Status Indicator -->
+                <div class="flex items-center space-x-2">
+                    <div class="flex items-center space-x-1.5">
+                        <div
+                            class="w-2 h-2 rounded-full"
+                            :class="botPaused ? 'bg-yellow-500' : 'bg-green-500 animate-pulse'"
+                        ></div>
+                        <span class="text-xs font-medium" :class="botPaused ? 'text-yellow-400' : 'text-green-400'" x-text="botPaused ? 'Paused' : 'Active'"></span>
+                    </div>
+                    <!-- Pause/Resume Toggle -->
+                    <button
+                        @click="toggleBot()"
+                        :disabled="isTogglingBot"
+                        class="px-2 py-1 text-xs rounded-md transition-colors flex items-center space-x-1"
+                        :class="botPaused ? 'bg-green-600/30 hover:bg-green-600/50 text-green-400 border border-green-500/30' : 'bg-yellow-600/30 hover:bg-yellow-600/50 text-yellow-400 border border-yellow-500/30'"
+                    >
+                        <template x-if="!botPaused">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                            </svg>
+                        </template>
+                        <template x-if="botPaused">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                        </template>
+                        <span x-text="botPaused ? 'Start' : 'Pause'"></span>
+                    </button>
+                </div>
+                <!-- Separator -->
+                <div class="h-4 w-px bg-gray-600"></div>
+                <!-- Next refresh countdown -->
+                <span class="text-xs text-gray-500" x-show="nextRefreshIn > 0 && !isRefreshing && !botPaused">
+                    Next refresh: <span x-text="formatTime(nextRefreshIn)"></span>
+                </span>
+                <span class="text-xs text-gray-500" x-show="botPaused">
+                    Auto-refresh paused
+                </span>
+                <!-- Manual refresh button -->
+                <button
+                    @click="refreshRecommendations()"
+                    :disabled="isRefreshing"
+                    class="px-3 py-1.5 text-sm bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-2"
+                >
+                    <svg class="w-4 h-4" :class="{ 'animate-spin': isRefreshing }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span x-show="!isRefreshing">Refresh Now</span>
+                    <span x-show="isRefreshing">Analyzing...</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="flex items-center space-x-1 px-6 py-2 border-b border-gray-700/30 bg-gray-900/30">
+            <button
+                @click="activeFilter = 'all'; refreshDashboard()"
+                :class="activeFilter === 'all' ? 'bg-purple-600/30 text-purple-400 border-purple-500/50' : 'bg-gray-700/30 text-gray-400 border-gray-600/30 hover:bg-gray-700/50'"
+                class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+            >
+                All
+            </button>
+            <button
+                @click="activeFilter = 'today'; refreshDashboard()"
+                :class="activeFilter === 'today' ? 'bg-green-600/30 text-green-400 border-green-500/50' : 'bg-gray-700/30 text-gray-400 border-gray-600/30 hover:bg-gray-700/50'"
+                class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+            >
+                Today
+            </button>
+            <button
+                @click="activeFilter = 'this_week'; refreshDashboard()"
+                :class="activeFilter === 'this_week' ? 'bg-blue-600/30 text-blue-400 border-blue-500/50' : 'bg-gray-700/30 text-gray-400 border-gray-600/30 hover:bg-gray-700/50'"
+                class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+            >
+                This Week
+            </button>
+            <button
+                @click="activeFilter = 'sports'; refreshDashboard()"
+                :class="activeFilter === 'sports' ? 'bg-orange-600/30 text-orange-400 border-orange-500/50' : 'bg-gray-700/30 text-gray-400 border-gray-600/30 hover:bg-gray-700/50'"
+                class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+            >
+                Sports
+            </button>
+            <span class="text-xs text-gray-500 ml-2" x-show="filterCount !== null">
+                (<span x-text="filterCount"></span> found)
+            </span>
+        </div>
+
+        {% if not kalshi_configured %}
+        <!-- Kalshi Not Configured Warning -->
+        <div class="flex-1 flex items-center justify-center p-6">
+            <div class="text-center max-w-md">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h2 class="text-xl font-semibold text-white mb-2">Kalshi Not Configured</h2>
+                <p class="text-gray-400 mb-4">Please add your Kalshi API credentials in the .env file to use the advisor.</p>
+                <code class="block bg-gray-900/50 rounded-lg p-4 text-sm text-gray-300 text-left">
+                    KALSHI_API_KEY_ID=your-key-id<br>
+                    KALSHI_PRIVATE_KEY_PATH=./kalshi_private_key.pem
+                </code>
+            </div>
+        </div>
+        {% elif not ai_configured %}
+        <!-- AI Not Configured Warning -->
+        <div class="flex-1 flex items-center justify-center p-6">
+            <div class="text-center max-w-md">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h2 class="text-xl font-semibold text-white mb-2">AI Not Configured</h2>
+                <p class="text-gray-400 mb-4">Please add your Anthropic API key in the .env file to use the advisor.</p>
+                <code class="block bg-gray-900/50 rounded-lg p-4 text-sm text-gray-300 text-left">
+                    AI_ANTHROPIC_API_KEY=sk-ant-...
+                </code>
+            </div>
+        </div>
+        {% else %}
+        <!-- Dashboard Content -->
+        <div
+            class="flex-1 overflow-y-auto p-4"
+            id="dashboard-content"
+            hx-get="/advisor/partials/auto-dashboard?filter=all"
+            hx-trigger="load"
+            hx-swap="innerHTML"
+            @recommendations-refreshed.window="refreshDashboard()"
+        >
+            <div class="animate-pulse space-y-4">
+                <div class="h-16 bg-gray-700/50 rounded-xl"></div>
+                <div class="h-48 bg-gray-700/50 rounded-xl"></div>
+                <div class="h-48 bg-gray-700/50 rounded-xl"></div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- RIGHT: Chat Panel (1/3 width) -->
+    <div class="w-1/3 flex flex-col bg-gray-800/50 rounded-2xl border border-gray-700/50 overflow-hidden">
+        <!-- Chat Header -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-700/50">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-sm font-semibold text-white">Chat</h2>
+                </div>
+            </div>
+            <button
+                @click="clearChat()"
+                class="px-2 py-1 text-xs text-gray-400 hover:text-white hover:bg-gray-700/50 rounded transition-colors"
+            >
+                Clear
+            </button>
+        </div>
+
+        {% if kalshi_configured and ai_configured %}
+        <!-- Messages Area -->
+        <div class="flex-1 overflow-y-auto p-3 space-y-3" id="messages-container">
+            <!-- Welcome Message -->
+            <template x-if="messages.length === 0">
+                <div class="text-center py-6">
+                    <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-sm font-semibold text-white mb-1">Ask Questions</h3>
+                    <p class="text-xs text-gray-400 mb-3">
+                        Get deeper analysis on specific markets
+                    </p>
+                    <div class="flex flex-col gap-2">
+                        <button
+                            @click="sendMessage('Check my balance and positions')"
+                            class="px-3 py-1.5 text-xs bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+                        >
+                            Check portfolio
+                        </button>
+                        <button
+                            @click="sendMessage('Research the highest volume market')"
+                            class="px-3 py-1.5 text-xs bg-gray-700/50 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+                        >
+                            Research top market
+                        </button>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Message List -->
+            <template x-for="msg in messages" :key="msg.id">
+                <div :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
+                    <div :class="msg.role === 'user'
+                        ? 'bg-purple-600/30 border border-purple-500/30 max-w-[90%]'
+                        : 'bg-gray-700/50 border border-gray-600/30 max-w-[90%]'"
+                        class="rounded-xl px-3 py-2"
+                    >
+                        <div class="text-sm text-white whitespace-pre-wrap" x-html="formatMessage(msg.content)"></div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Loading Indicator -->
+            <template x-if="chatLoading">
+                <div class="flex justify-start">
+                    <div class="bg-gray-700/50 border border-gray-600/30 rounded-xl px-3 py-2">
+                        <div class="flex items-center space-x-1">
+                            <div class="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+                            <div class="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+                            <div class="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Input Area -->
+        <div class="border-t border-gray-700/50 p-3">
+            <form @submit.prevent="sendMessage()" class="flex space-x-2">
+                <input
+                    type="text"
+                    x-model="inputMessage"
+                    :disabled="chatLoading"
+                    placeholder="Ask about markets..."
+                    class="flex-1 bg-gray-900/50 border border-gray-700/50 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 disabled:opacity-50"
+                >
+                <button
+                    type="submit"
+                    :disabled="chatLoading || !inputMessage.trim()"
+                    class="px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                </button>
+            </form>
+        </div>
+        {% else %}
+        <div class="flex-1 flex items-center justify-center p-4">
+            <p class="text-sm text-gray-500 text-center">Configure Kalshi and AI to use chat</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function advisorApp() {
+    return {
+        // Dashboard state
+        isRefreshing: false,
+        lastRefresh: null,
+        nextRefreshIn: 300, // 5 minutes in seconds
+        refreshStatus: 'Click refresh to analyze markets',
+        refreshInterval: null,
+        activeFilter: 'all',
+        filterCount: null,
+
+        // Bot control state
+        botPaused: false,
+        isTogglingBot: false,
+
+        // Chat state
+        messages: [],
+        inputMessage: '',
+        chatLoading: false,
+        messageId: 0,
+
+        init() {
+            this.fetchBotStatus();
+            this.startRefreshTimer();
+        },
+
+        async fetchBotStatus() {
+            try {
+                const response = await fetch('/advisor/api/bot/status');
+                const data = await response.json();
+                if (data.success) {
+                    this.botPaused = data.is_paused;
+                }
+            } catch (error) {
+                console.error('Failed to fetch bot status:', error);
+            }
+        },
+
+        async toggleBot() {
+            if (this.isTogglingBot) return;
+            this.isTogglingBot = true;
+
+            try {
+                const response = await fetch('/advisor/api/bot/toggle', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.botPaused = data.paused;
+                    this.refreshStatus = data.paused ? 'Bot paused' : 'Bot resumed - will refresh soon';
+                    if (!data.paused) {
+                        // Resume: reset timer
+                        this.nextRefreshIn = 10; // Refresh in 10 seconds after resuming
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to toggle bot:', error);
+            }
+
+            this.isTogglingBot = false;
+        },
+
+        refreshDashboard() {
+            // Manually trigger dashboard refresh with filter
+            const dashboard = document.getElementById('dashboard-content');
+            if (dashboard) {
+                htmx.ajax('GET', '/advisor/partials/auto-dashboard?filter=' + this.activeFilter, {
+                    target: '#dashboard-content',
+                    swap: 'innerHTML'
+                });
+            }
+        },
+
+        startRefreshTimer() {
+            // Update countdown every second
+            this.refreshInterval = setInterval(() => {
+                if (this.nextRefreshIn > 0 && !this.isRefreshing && !this.botPaused) {
+                    this.nextRefreshIn--;
+                }
+                if (this.nextRefreshIn <= 0 && !this.isRefreshing && !this.botPaused) {
+                    this.triggerAutoRefresh();
+                }
+            }, 1000);
+        },
+
+        async triggerAutoRefresh() {
+            if (this.isRefreshing || this.botPaused) return;
+            await this.refreshRecommendations();
+        },
+
+        async refreshRecommendations() {
+            if (this.isRefreshing) return;
+
+            this.isRefreshing = true;
+            this.refreshStatus = 'Analyzing markets with AI...';
+
+            try {
+                const response = await fetch('/advisor/api/auto-recommendations/refresh', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    this.refreshStatus = `${data.count} opportunities found`;
+                    this.nextRefreshIn = 300; // Reset to 5 minutes
+                    this.refreshDashboard(); // Refresh with current filter
+                } else {
+                    this.refreshStatus = `Error: ${data.error}`;
+                }
+            } catch (error) {
+                this.refreshStatus = `Error: ${error.message}`;
+            }
+
+            this.isRefreshing = false;
+            this.lastRefresh = new Date();
+        },
+
+        formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        },
+
+        // Chat methods
+        async sendMessage(preset = null) {
+            const message = preset || this.inputMessage.trim();
+            if (!message || this.chatLoading) return;
+
+            this.inputMessage = '';
+            this.messageId++;
+
+            // Add user message
+            this.messages.push({
+                id: this.messageId,
+                role: 'user',
+                content: message
+            });
+
+            this.scrollToBottom();
+            this.chatLoading = true;
+
+            try {
+                const response = await fetch('/advisor/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    this.messageId++;
+                    this.messages.push({
+                        id: this.messageId,
+                        role: 'assistant',
+                        content: data.response
+                    });
+
+                    // Trigger recommendations refresh if any were created
+                    if (data.recommendations && data.recommendations.length > 0) {
+                        htmx.trigger(document.body, 'recommendations-refreshed');
+                    }
+                } else {
+                    this.messageId++;
+                    this.messages.push({
+                        id: this.messageId,
+                        role: 'assistant',
+                        content: `Error: ${data.error}`
+                    });
+                }
+            } catch (error) {
+                this.messageId++;
+                this.messages.push({
+                    id: this.messageId,
+                    role: 'assistant',
+                    content: `Error: ${error.message}`
+                });
+            }
+
+            this.chatLoading = false;
+            this.scrollToBottom();
+        },
+
+        async clearChat() {
+            try {
+                await fetch('/advisor/api/clear', { method: 'POST' });
+                this.messages = [];
+            } catch (error) {
+                console.error('Failed to clear chat:', error);
+            }
+        },
+
+        scrollToBottom() {
+            this.$nextTick(() => {
+                const container = document.getElementById('messages-container');
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            });
+        },
+
+        formatMessage(content) {
+            // Basic markdown-like formatting
+            return content
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code class="bg-gray-900/50 px-1 rounded text-xs">$1</code>')
+                .replace(/\n/g, '<br>');
+        }
+    }
+}
+</script>
+{% endblock %}

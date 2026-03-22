@@ -1,0 +1,32 @@
+{% if trades %}
+<div class="space-y-3">
+    {% for trade in trades %}
+    <div class="bg-gray-900/50 rounded-xl p-4 hover:bg-gray-900/70 transition-colors">
+        <div class="flex items-start justify-between mb-2">
+            <div>
+                <p class="text-sm font-medium text-white">{{ trade.market_ticker }}</p>
+                <p class="text-xs text-gray-500">{{ trade.timestamp }}</p>
+            </div>
+            <span class="px-2 py-0.5 text-xs font-semibold rounded {% if trade.pnl >= 0 %}bg-green-500/20 text-green-400{% else %}bg-red-500/20 text-red-400{% endif %}">
+                {{ trade.exit_reason|replace('_', ' ')|title }}
+            </span>
+        </div>
+        <div class="flex items-center justify-between text-sm">
+            <div class="text-gray-400">
+                {{ trade.action|upper }} {{ trade.contracts }} {{ trade.side }} @ ${{ "%.2f"|format(trade.price) }}
+            </div>
+            <div class="{% if trade.pnl >= 0 %}text-green-400{% else %}text-red-400{% endif %} font-medium">
+                {% if trade.pnl >= 0 %}+{% endif %}${{ "%.2f"|format(trade.pnl) }}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-8">
+    <svg class="w-12 h-12 mx-auto text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+    </svg>
+    <p class="text-gray-500">No trades yet</p>
+</div>
+{% endif %}

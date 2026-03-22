@@ -1,0 +1,33 @@
+<div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-semibold text-white">Bot Status</h2>
+    <div class="flex items-center space-x-2">
+        {% if status.is_running %}
+        <div class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></div>
+        <span class="text-sm text-green-400 font-medium">Running</span>
+        {% else %}
+        <div class="w-2.5 h-2.5 rounded-full bg-gray-500"></div>
+        <span class="text-sm text-gray-400 font-medium">Stopped</span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+    <div class="bg-gray-900/50 rounded-xl p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Last Cycle</p>
+        <p class="text-white font-semibold">{{ status.last_cycle }}</p>
+    </div>
+    <div class="bg-gray-900/50 rounded-xl p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Cycles Today</p>
+        <p class="text-white font-semibold">{{ status.cycles_today }}</p>
+    </div>
+    <div class="bg-gray-900/50 rounded-xl p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Next Cycle</p>
+        <p class="text-white font-semibold">{{ status.next_cycle_in }}</p>
+    </div>
+    <div class="bg-gray-900/50 rounded-xl p-4">
+        <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Errors</p>
+        <p class="{% if status.errors_today > 0 %}text-red-400{% else %}text-green-400{% endif %} font-semibold">
+            {{ status.errors_today }}
+        </p>
+    </div>
+</div>

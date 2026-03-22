@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Hybrid Bot{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-white">Settings</h1>
+            <p class="text-gray-400 mt-1">Configure hybrid trading bot</p>
+        </div>
+        <a href="/hybrid" class="text-blue-400 hover:text-blue-300">
+            &larr; Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Settings Sections -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Trading Settings -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h2 class="text-lg font-semibold text-white mb-4">Trading</h2>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">Paper Mode</span>
+                    <span class="text-white">{{ "Enabled" if settings.hybrid_trading.paper_mode else "Disabled" }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">Max Position %</span>
+                    <span class="text-white">{{ "%.0f"|format(settings.hybrid_trading.max_position_pct * 100) }}%</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">Max Bet USD</span>
+                    <span class="text-white">${{ "%.0f"|format(settings.hybrid_trading.max_bet_amount_usd) }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">Max Positions</span>
+                    <span class="text-white">{{ settings.hybrid_trading.max_concurrent_positions }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portfolio Settings -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h2 class="text-lg font-semibold text-white mb-4">Portfolio</h2>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">Kelly Fraction</span>
+                    <span class="text-white">{{ "%.0f"|format(settings.portfolio.kelly_fraction * 100) }}%</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">Max Daily Loss</span>
+                    <span class="text-white">{{ "%.0f"|format(settings.portfolio.max_daily_loss_pct * 100) }}%</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">Max Drawdown</span>
+                    <span class="text-white">{{ "%.0f"|format(settings.portfolio.max_drawdown_pct * 100) }}%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exit Rules -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h2 class="text-lg font-semibold text-white mb-4">Exit Rules</h2>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">Take Profit</span>
+                    <span class="text-white">{{ "%.0f"|format(settings.exit_rules.trailing_take_profit_pct * 100) }}%</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">Stop Loss</span>
+                    <span class="text-white">{{ "%.0f"|format(settings.exit_rules.stop_loss_pct * 100) }}%</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">Max Hold Days</span>
+                    <span class="text-white">{{ settings.exit_rules.max_hold_days }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">Exit Before Expiry</span>
+                    <span class="text-white">{{ settings.exit_rules.exit_hours_before_expiry }}h</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ensemble Settings -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h2 class="text-lg font-semibold text-white mb-4">AI Ensemble</h2>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">Min Confidence</span>
+                    <span class="text-white">{{ "%.0f"|format(settings.ensemble.min_consensus_confidence * 100) }}%</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">Max Disagreement</span>
+                    <span class="text-white">{{ "%.0f"|format(settings.ensemble.max_disagreement_spread * 100) }}%</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400">Min Edge</span>
+                    <span class="text-white">{{ "%.0f"|format(settings.ensemble.min_edge_to_trade * 100) }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <p class="text-sm text-gray-500">
+        Settings are configured via environment variables. Restart the bot to apply changes.
+    </p>
+</div>
+{% endblock %}

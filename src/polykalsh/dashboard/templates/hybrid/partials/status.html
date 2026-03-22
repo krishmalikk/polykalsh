@@ -1,0 +1,29 @@
+<div class="flex flex-wrap items-center gap-6 text-sm">
+    <div class="flex items-center space-x-2">
+        <span class="w-2 h-2 rounded-full {% if status.is_running %}bg-green-500{% else %}bg-red-500{% endif %}"></span>
+        <span class="text-gray-400">Status:</span>
+        <span class="text-white font-medium">{% if status.is_running %}Running{% else %}Stopped{% endif %}</span>
+    </div>
+
+    <div class="flex items-center space-x-2">
+        <span class="text-gray-400">Last Cycle:</span>
+        <span class="text-white">{{ status.last_cycle }}</span>
+    </div>
+
+    <div class="flex items-center space-x-2">
+        <span class="text-gray-400">Next In:</span>
+        <span class="text-white">{{ status.next_cycle_in }}</span>
+    </div>
+
+    <div class="flex items-center space-x-2">
+        <span class="text-gray-400">Cycles Today:</span>
+        <span class="text-white">{{ status.cycles_today }}</span>
+    </div>
+
+    {% if status.errors_today > 0 %}
+    <div class="flex items-center space-x-2">
+        <span class="text-gray-400">Errors:</span>
+        <span class="text-red-400">{{ status.errors_today }}</span>
+    </div>
+    {% endif %}
+</div>

@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Kalshi Bot{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <div class="flex items-center space-x-3 mb-2">
+                <a href="/kalshi" class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </a>
+                <h1 class="text-3xl font-bold text-white">Settings</h1>
+            </div>
+            <p class="text-gray-400">Configure your Kalshi AI trading bot</p>
+        </div>
+    </div>
+
+    <!-- Settings Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Trading Settings -->
+        <div class="bg-gray-800/50 rounded-2xl border border-gray-700/50 p-6">
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                </div>
+                <h2 class="text-lg font-semibold text-white">Trading</h2>
+            </div>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center py-3 border-b border-gray-700/50">
+                    <span class="text-gray-400">Max Position %</span>
+                    <span class="text-white font-medium">{{ "%.0f"|format(settings.hybrid_trading.max_position_pct * 100) }}%</span>
+                </div>
+                <div class="flex justify-between items-center py-3 border-b border-gray-700/50">
+                    <span class="text-gray-400">Max Bet USD</span>
+                    <span class="text-white font-medium">${{ "%.0f"|format(settings.hybrid_trading.max_bet_amount_usd) }}</span>
+                </div>
+                <div class="flex justify-between items-center py-3">
+                    <span class="text-gray-400">Max Positions</span>
+                    <span class="text-white font-medium">{{ settings.hybrid_trading.max_concurrent_positions }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portfolio Settings -->
+        <div class="bg-gray-800/50 rounded-2xl border border-gray-700/50 p-6">
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                </div>
+                <h2 class="text-lg font-semibold text-white">Portfolio</h2>
+            </div>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center py-3 border-b border-gray-700/50">
+                    <span class="text-gray-400">Kelly Fraction</span>
+                    <span class="text-white font-medium">{{ "%.0f"|format(settings.portfolio.kelly_fraction * 100) }}%</span>
+                </div>
+                <div class="flex justify-between items-center py-3 border-b border-gray-700/50">
+                    <span class="text-gray-400">Max Daily Loss</span>
+                    <span class="text-white font-medium">{{ "%.0f"|format(settings.portfolio.max_daily_loss_pct * 100) }}%</span>
+                </div>
+                <div class="flex justify-between items-center py-3">
+                    <span class="text-gray-400">Max Drawdown</span>
+                    <span class="text-white font-medium">{{ "%.0f"|format(settings.portfolio.max_drawdown_pct * 100) }}%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exit Rules -->
+        <div class="bg-gray-800/50 rounded-2xl border border-gray-700/50 p-6">
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                </div>
+                <h2 class="text-lg font-semibold text-white">Exit Rules</h2>
+            </div>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center py-3 border-b border-gray-700/50">
+                    <span class="text-gray-400">Take Profit</span>
+                    <span class="text-green-400 font-medium">{{ "%.0f"|format(settings.exit_rules.trailing_take_profit_pct * 100) }}%</span>
+                </div>
+                <div class="flex justify-between items-center py-3 border-b border-gray-700/50">
+                    <span class="text-gray-400">Stop Loss</span>
+                    <span class="text-red-400 font-medium">{{ "%.0f"|format(settings.exit_rules.stop_loss_pct * 100) }}%</span>
+                </div>
+                <div class="flex justify-between items-center py-3 border-b border-gray-700/50">
+                    <span class="text-gray-400">Max Hold Days</span>
+                    <span class="text-white font-medium">{{ settings.exit_rules.max_hold_days }}</span>
+                </div>
+                <div class="flex justify-between items-center py-3">
+                    <span class="text-gray-400">Exit Before Expiry</span>
+                    <span class="text-white font-medium">{{ settings.exit_rules.exit_hours_before_expiry }}h</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Ensemble -->
+        <div class="bg-gray-800/50 rounded-2xl border border-gray-700/50 p-6">
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                </div>
+                <h2 class="text-lg font-semibold text-white">AI Ensemble</h2>
+            </div>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center py-3 border-b border-gray-700/50">
+                    <span class="text-gray-400">Min Confidence</span>
+                    <span class="text-white font-medium">{{ "%.0f"|format(settings.ensemble.min_consensus_confidence * 100) }}%</span>
+                </div>
+                <div class="flex justify-between items-center py-3 border-b border-gray-700/50">
+                    <span class="text-gray-400">Max Disagreement</span>
+                    <span class="text-white font-medium">{{ "%.0f"|format(settings.ensemble.max_disagreement_spread * 100) }}%</span>
+                </div>
+                <div class="flex justify-between items-center py-3">
+                    <span class="text-gray-400">Min Edge</span>
+                    <span class="text-white font-medium">{{ "%.0f"|format(settings.ensemble.min_edge_to_trade * 100) }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <p class="text-sm text-gray-500 text-center">
+        Settings are configured via environment variables. Restart the bot to apply changes.
+    </p>
+</div>
+{% endblock %}

@@ -62,6 +62,52 @@ class HealthStatus(enum.Enum):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# KALSHI HYBRID TRADING BOT ENUMS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class StrategyType(enum.Enum):
+    """Trading strategy type."""
+
+    DIRECTIONAL = "directional"
+    MARKET_MAKING = "market_making"
+    ARBITRAGE = "arbitrage"
+
+
+class ExitReason(enum.Enum):
+    """Exit trigger reason."""
+
+    TAKE_PROFIT = "take_profit"
+    STOP_LOSS = "stop_loss"
+    TRAILING_STOP = "trailing_stop"
+    CONFIDENCE_DECAY = "confidence_decay"
+    TIME_LIMIT = "time_limit"
+    EXPIRY_APPROACH = "expiry_approach"
+    VOLATILITY_EXIT = "volatility_exit"
+    MANUAL = "manual"
+    MARKET_RESOLVED = "market_resolved"
+
+
+class AgentRole(enum.Enum):
+    """AI agent role in ensemble."""
+
+    LEAD_FORECASTER = "lead_forecaster"
+    NEWS_ANALYST = "news_analyst"
+    BULL_RESEARCHER = "bull_researcher"
+    BEAR_RESEARCHER = "bear_researcher"
+    RISK_MANAGER = "risk_manager"
+
+
+class TradeAction(enum.Enum):
+    """Possible trading actions from ensemble."""
+
+    BUY_YES = "BUY_YES"
+    BUY_NO = "BUY_NO"
+    HOLD = "HOLD"
+    SKIP = "SKIP"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # POLYMARKET COPY-TRADER TABLES
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -305,6 +351,277 @@ class KalshiRecommendation(Base):
 
     # Relationship
     market: Mapped["KalshiMarket"] = relationship("KalshiMarket", back_populates="recommendations")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# KALSHI HYBRID TRADING BOT TABLES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class KalshiEvent(Base):
+    """Tracked Kalshi events for hybrid trading."""
+
+    __tablename__ = "kalshi_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_ticker: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    title: Mapped[str] = mapped_column(String(500))
+    category: Mapped[Optional[str]] = mapped_column(String(50))
+
+    # Discovery metadata
+    discovered_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    volume_24h: Mapped[int] = mapped_column(Integer, default=0)
+
+    # State
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_scanned: Mapped[Optional[datetime]] = mapped_column(DateTime)
+
+    # Relationships
+    research: Mapped[list["EventResearch"]] = relationship(
+        "EventResearch", back_populates="event", cascade="all, delete-orphan"
+    )
+
+
+class EventResearch(Base):
+    """Deep research results from Perplexity for events/markets."""
+
+    __tablename__ = "event_research"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    # Identifiers (can lookup without FK for flexibility)
+    event_ticker: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    market_ticker: Mapped[Optional[str]] = mapped_column(String(50), index=True)
+    research_type: Mapped[str] = mapped_column(String(30), default="event_analysis")
+
+    # Core analysis
+    title: Mapped[str] = mapped_column(String(500))
+    summary: Mapped[str] = mapped_column(Text)
+    narrative: Mapped[str] = mapped_column(Text)
+
+    # Probability estimates
+    probability_yes: Mapped[Optional[float]] = mapped_column(Float)
+    confidence: Mapped[Optional[float]] = mapped_column(Float)
+
+    # Factors (stored as JSON)
+    bullish_factors: Mapped[Optional[str]] = mapped_column(Text)  # JSON array
+    bearish_factors: Mapped[Optional[str]] = mapped_column(Text)  # JSON array
+    risk_factors: Mapped[Optional[str]] = mapped_column(Text)  # JSON array
+    key_dates: Mapped[Optional[str]] = mapped_column(Text)  # JSON array
+
+    # Sources
+    sources: Mapped[Optional[str]] = mapped_column(Text)  # JSON array
+    source_count: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Model info
+    model_used: Mapped[Optional[str]] = mapped_column(String(100))
+    tokens_used: Mapped[Optional[int]] = mapped_column(Integer)
+    cost_usd: Mapped[Optional[float]] = mapped_column(Float)
+
+    # Quality indicators
+    data_freshness: Mapped[Optional[str]] = mapped_column(String(20))
+    consensus_strength: Mapped[Optional[str]] = mapped_column(String(20))
+
+    # Timestamps
+    researched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    # FK to event (optional, for relational queries)
+    event_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("kalshi_events.id"))
+
+    # Relationship
+    event: Mapped[Optional["KalshiEvent"]] = relationship("KalshiEvent", back_populates="research")
+
+
+class EnsembleDecision(Base):
+    """Aggregated ensemble decision for a market."""
+
+    __tablename__ = "ensemble_decisions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    market_id: Mapped[int] = mapped_column(Integer, ForeignKey("kalshi_markets.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    # Consensus
+    final_action: Mapped[TradeAction] = mapped_column(Enum(TradeAction))
+    weighted_probability: Mapped[float] = mapped_column(Float)
+    consensus_confidence: Mapped[float] = mapped_column(Float)
+    disagreement_score: Mapped[float] = mapped_column(Float)  # 0 = full agreement
+
+    # Vote breakdown
+    votes_buy_yes: Mapped[int] = mapped_column(Integer, default=0)
+    votes_buy_no: Mapped[int] = mapped_column(Integer, default=0)
+    votes_hold: Mapped[int] = mapped_column(Integer, default=0)
+    votes_skip: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Aggregated reasoning
+    bull_case: Mapped[Optional[str]] = mapped_column(Text)
+    bear_case: Mapped[Optional[str]] = mapped_column(Text)
+    key_risks: Mapped[Optional[str]] = mapped_column(Text)  # JSON array
+
+    # Edge estimate
+    estimated_edge: Mapped[Optional[float]] = mapped_column(Float)
+
+    # Outcome tracking (after resolution)
+    was_correct: Mapped[Optional[bool]] = mapped_column(Boolean)
+
+    # Cost tracking
+    total_tokens_used: Mapped[Optional[int]] = mapped_column(Integer)
+    total_cost_usd: Mapped[Optional[float]] = mapped_column(Float)
+
+    # Relationships
+    market: Mapped["KalshiMarket"] = relationship("KalshiMarket")
+    agent_decisions: Mapped[list["AgentDecision"]] = relationship(
+        "AgentDecision", back_populates="ensemble", cascade="all, delete-orphan"
+    )
+
+
+class AgentDecision(Base):
+    """Individual AI agent decisions."""
+
+    __tablename__ = "agent_decisions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ensemble_decision_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("ensemble_decisions.id"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    # Agent info
+    agent_role: Mapped[AgentRole] = mapped_column(Enum(AgentRole))
+    model_used: Mapped[str] = mapped_column(String(100))
+    weight: Mapped[float] = mapped_column(Float)
+
+    # Decision
+    action: Mapped[TradeAction] = mapped_column(Enum(TradeAction))
+    probability_estimate: Mapped[float] = mapped_column(Float)
+    confidence: Mapped[float] = mapped_column(Float)
+    reasoning: Mapped[str] = mapped_column(Text)
+    risks_identified: Mapped[Optional[str]] = mapped_column(Text)  # JSON array
+
+    # Timing and cost
+    latency_ms: Mapped[int] = mapped_column(Integer)
+    tokens_used: Mapped[Optional[int]] = mapped_column(Integer)
+    cost_usd: Mapped[Optional[float]] = mapped_column(Float)
+
+    # Relationship
+    ensemble: Mapped["EnsembleDecision"] = relationship(
+        "EnsembleDecision", back_populates="agent_decisions"
+    )
+
+
+class HybridPosition(Base):
+    """Positions held by the hybrid trading bot."""
+
+    __tablename__ = "hybrid_positions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    market_id: Mapped[int] = mapped_column(Integer, ForeignKey("kalshi_markets.id"), nullable=False)
+    ensemble_decision_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("ensemble_decisions.id")
+    )
+
+    # Mode
+    mode: Mapped[TradingMode] = mapped_column(Enum(TradingMode), default=TradingMode.PAPER)
+
+    # Position details
+    side: Mapped[str] = mapped_column(String(10))  # YES or NO
+    strategy_type: Mapped[StrategyType] = mapped_column(Enum(StrategyType))
+    size_contracts: Mapped[int] = mapped_column(Integer)
+    avg_entry_price: Mapped[float] = mapped_column(Float)
+    cost_basis: Mapped[float] = mapped_column(Float)  # Total USD invested
+
+    # Entry context
+    entry_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    entry_ensemble_confidence: Mapped[float] = mapped_column(Float)
+    entry_probability_estimate: Mapped[float] = mapped_column(Float)
+    kelly_suggested_size: Mapped[float] = mapped_column(Float)
+
+    # Exit tracking
+    is_open: Mapped[bool] = mapped_column(Boolean, default=True)
+    exit_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    exit_price: Mapped[Optional[float]] = mapped_column(Float)
+    exit_reason: Mapped[Optional[ExitReason]] = mapped_column(Enum(ExitReason))
+
+    # Performance
+    current_price: Mapped[Optional[float]] = mapped_column(Float)
+    unrealized_pnl: Mapped[Optional[float]] = mapped_column(Float)
+    realized_pnl: Mapped[Optional[float]] = mapped_column(Float)
+    high_water_mark: Mapped[Optional[float]] = mapped_column(Float)  # For trailing stop
+
+    # Confidence tracking
+    last_confidence_check: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    current_confidence: Mapped[Optional[float]] = mapped_column(Float)
+
+    # Relationships
+    market: Mapped["KalshiMarket"] = relationship("KalshiMarket")
+    ensemble_decision: Mapped[Optional["EnsembleDecision"]] = relationship("EnsembleDecision")
+    orders: Mapped[list["HybridOrder"]] = relationship(
+        "HybridOrder", back_populates="position", cascade="all, delete-orphan"
+    )
+
+
+class HybridOrder(Base):
+    """Orders placed by the hybrid trading bot."""
+
+    __tablename__ = "hybrid_orders"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    position_id: Mapped[int] = mapped_column(Integer, ForeignKey("hybrid_positions.id"), nullable=False)
+
+    # Mode
+    mode: Mapped[TradingMode] = mapped_column(Enum(TradingMode), default=TradingMode.PAPER)
+
+    # Order details
+    kalshi_order_id: Mapped[Optional[str]] = mapped_column(String(100))  # Live mode only
+    order_type: Mapped[str] = mapped_column(String(20))  # limit, market
+    action: Mapped[str] = mapped_column(String(10))  # BUY or SELL
+    side: Mapped[str] = mapped_column(String(10))  # YES or NO
+
+    quantity: Mapped[int] = mapped_column(Integer)
+    limit_price: Mapped[Optional[float]] = mapped_column(Float)
+
+    # Execution
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    status: Mapped[TradeStatus] = mapped_column(Enum(TradeStatus), default=TradeStatus.PENDING)
+    filled_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    fill_price: Mapped[Optional[float]] = mapped_column(Float)
+    fill_quantity: Mapped[Optional[int]] = mapped_column(Integer)
+
+    error_message: Mapped[Optional[str]] = mapped_column(Text)
+
+    # Relationship
+    position: Mapped["HybridPosition"] = relationship("HybridPosition", back_populates="orders")
+
+
+class PortfolioSnapshot(Base):
+    """Periodic snapshots of portfolio state."""
+
+    __tablename__ = "portfolio_snapshots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    mode: Mapped[TradingMode] = mapped_column(Enum(TradingMode))
+
+    # Balances
+    cash_balance: Mapped[float] = mapped_column(Float)
+    positions_value: Mapped[float] = mapped_column(Float)
+    total_value: Mapped[float] = mapped_column(Float)
+
+    # Allocation
+    directional_allocation: Mapped[float] = mapped_column(Float)
+    market_making_allocation: Mapped[float] = mapped_column(Float)
+    arbitrage_allocation: Mapped[float] = mapped_column(Float)
+
+    # Metrics
+    open_positions_count: Mapped[int] = mapped_column(Integer)
+    total_pnl: Mapped[float] = mapped_column(Float)
+    daily_pnl: Mapped[float] = mapped_column(Float)
+    win_rate: Mapped[Optional[float]] = mapped_column(Float)
+    sharpe_ratio: Mapped[Optional[float]] = mapped_column(Float)
+
+    # AI costs
+    daily_ai_cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

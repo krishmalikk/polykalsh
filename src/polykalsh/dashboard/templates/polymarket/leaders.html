@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Polymarket Bot{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <div class="flex items-center space-x-3 mb-2">
+                <a href="/polymarket" class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </a>
+                <h1 class="text-3xl font-bold text-white">Leader Wallets</h1>
+            </div>
+            <p class="text-gray-400">Top-performing wallets you're tracking</p>
+        </div>
+    </div>
+
+    <!-- Leaders Table -->
+    <div class="bg-gray-800/50 rounded-2xl border border-gray-700/50">
+        <div
+            class="p-6"
+            hx-get="/polymarket/partials/leaders"
+            hx-trigger="load, every 30s"
+            hx-swap="innerHTML"
+        >
+            <div class="animate-pulse space-y-3">
+                <div class="h-16 bg-gray-700 rounded"></div>
+                <div class="h-16 bg-gray-700 rounded"></div>
+                <div class="h-16 bg-gray-700 rounded"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

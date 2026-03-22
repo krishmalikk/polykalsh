@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <div class="flex items-center space-x-3 mb-2">
+                <div class="w-10 h-10 rounded-xl gradient-polymarket flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-white">Polymarket Copy Bot</h1>
+            </div>
+            <p class="text-gray-400">Mirror trades from top-performing wallets</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="/polymarket/leaders" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                Leaders
+            </a>
+            <a href="/polymarket/positions" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                Positions
+            </a>
+            <a href="/polymarket/history" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                History
+            </a>
+            <a href="/polymarket/settings" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                Settings
+            </a>
+        </div>
+    </div>
+
+    <!-- Setup Required Banner -->
+    <div class="bg-gradient-to-r from-pink-500/20 to-rose-500/20 rounded-2xl border border-pink-500/30 p-6">
+        <div class="flex items-start space-x-4">
+            <div class="w-12 h-12 rounded-xl bg-pink-500/20 flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold text-white mb-1">Setup Required</h3>
+                <p class="text-gray-400 mb-4">
+                    To start copy trading on Polymarket, you need to configure your wallet credentials in the <code class="bg-gray-900 px-2 py-1 rounded text-pink-400">.env</code> file.
+                </p>
+                <div class="bg-gray-900/50 rounded-lg p-4 font-mono text-sm">
+                    <p class="text-gray-500"># Required environment variables:</p>
+                    <p class="text-pink-400">POLYMARKET_PRIVATE_KEY=<span class="text-gray-500">your_private_key</span></p>
+                    <p class="text-pink-400">POLYMARKET_FUNDER_ADDRESS=<span class="text-gray-500">your_funder_address</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status + Portfolio Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Status Card -->
+        <div
+            class="bg-gray-800/50 rounded-2xl border border-gray-700/50 p-6"
+            hx-get="/polymarket/partials/status"
+            hx-trigger="load, every 10s"
+            hx-swap="innerHTML"
+        >
+            <div class="animate-pulse space-y-4">
+                <div class="h-6 w-24 bg-gray-700 rounded"></div>
+                <div class="h-20 bg-gray-700 rounded"></div>
+            </div>
+        </div>
+
+        <!-- Portfolio Card -->
+        <div
+            class="lg:col-span-2 bg-gray-800/50 rounded-2xl border border-gray-700/50 p-6"
+            hx-get="/polymarket/partials/portfolio"
+            hx-trigger="load, every 15s"
+            hx-swap="innerHTML"
+        >
+            <div class="animate-pulse space-y-4">
+                <div class="h-6 w-32 bg-gray-700 rounded"></div>
+                <div class="grid grid-cols-4 gap-4">
+                    <div class="h-20 bg-gray-700 rounded"></div>
+                    <div class="h-20 bg-gray-700 rounded"></div>
+                    <div class="h-20 bg-gray-700 rounded"></div>
+                    <div class="h-20 bg-gray-700 rounded"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaders + Positions -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Tracked Leaders -->
+        <div class="bg-gray-800/50 rounded-2xl border border-gray-700/50 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-semibold text-white">Tracked Leaders</h2>
+                <a href="/polymarket/leaders" class="text-sm text-pink-400 hover:text-pink-300">Manage</a>
+            </div>
+            <div
+                hx-get="/polymarket/partials/leaders"
+                hx-trigger="load, every 30s"
+                hx-swap="innerHTML"
+            >
+                <div class="animate-pulse space-y-3">
+                    <div class="h-16 bg-gray-700 rounded"></div>
+                    <div class="h-16 bg-gray-700 rounded"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Open Positions -->
+        <div class="bg-gray-800/50 rounded-2xl border border-gray-700/50 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-semibold text-white">Open Positions</h2>
+                <a href="/polymarket/positions" class="text-sm text-pink-400 hover:text-pink-300">View All</a>
+            </div>
+            <div
+                hx-get="/polymarket/partials/positions"
+                hx-trigger="load, every 15s"
+                hx-swap="innerHTML"
+            >
+                <div class="animate-pulse space-y-3">
+                    <div class="h-16 bg-gray-700 rounded"></div>
+                    <div class="h-16 bg-gray-700 rounded"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+<h2 class="text-lg font-semibold text-white mb-4">Strategy Allocation</h2>
+
+<div class="space-y-4">
+    <!-- Directional -->
+    <div>
+        <div class="flex justify-between text-sm mb-1">
+            <span class="text-gray-400">Directional</span>
+            <span class="text-white">{{ "%.0f"|format(allocation.directional) }}%</span>
+        </div>
+        <div class="w-full bg-gray-700 rounded-full h-2">
+            <div class="bg-blue-500 h-2 rounded-full" style="width: {{ allocation.directional }}%"></div>
+        </div>
+    </div>
+
+    <!-- Market Making -->
+    <div>
+        <div class="flex justify-between text-sm mb-1">
+            <span class="text-gray-400">Market Making</span>
+            <span class="text-white">{{ "%.0f"|format(allocation.market_making) }}%</span>
+        </div>
+        <div class="w-full bg-gray-700 rounded-full h-2">
+            <div class="bg-green-500 h-2 rounded-full" style="width: {{ allocation.market_making }}%"></div>
+        </div>
+    </div>
+
+    <!-- Arbitrage -->
+    <div>
+        <div class="flex justify-between text-sm mb-1">
+            <span class="text-gray-400">Arbitrage</span>
+            <span class="text-white">{{ "%.0f"|format(allocation.arbitrage) }}%</span>
+        </div>
+        <div class="w-full bg-gray-700 rounded-full h-2">
+            <div class="bg-purple-500 h-2 rounded-full" style="width: {{ allocation.arbitrage }}%"></div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4 pt-4 border-t border-gray-700">
+    <p class="text-xs text-gray-400">
+        Target allocation for portfolio capital across trading strategies.
+    </p>
+</div>
